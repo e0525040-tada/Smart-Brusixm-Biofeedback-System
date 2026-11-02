@@ -1,0 +1,51 @@
+const int sensorPin = A0;
+const int motorPin = 9;
+const int threshold = 375;
+const int motorIntensity = 40;
+
+unsigned long clenchStartTime = 0;
+bool isClenching = false;
+const unsigned long requiredClenchTime = 3000; // 3000 milliseconds = 3 seconds
+ 
+void setup() {
+  pinMode(motorPin, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("SYSTEM READY: 3-Second Confirmation Mode Active...");
+}
+ 
+void loop() {
+  int rawValue = analogRead(sensorPin);
+ 
+  if (rawValue > threshold) {
+    if (!isClenching) {
+      clenchStartTime = millis(); // Start timing right when the clench begins
+      isClenching = true;
+    }
+  } else {
+    isClenching = false; // Reset if they stop moving their jaw
+  }
+
+  unsigned long timeSpentClenching = 0;
+  if (isClenching) {
+    timeSpentClenching = millis() - clenchStartTime;
+  }
+ 
+  Serial.print(rawValue);
+  Serial.print("\t");
+  Serial.print(threshold);
+  Serial.print("\t");
+ 
+  if (isClenching && timeSpentClenching >= requiredClenchTime) {
+    analogWrite(motorPin, motorIntensity);
+    Serial.println("MOTOR_ACTIVATED!"); // Clench confirmed for 3 seconds!
+  } else if (isClenching) {
+    analogWrite(motorPin, 0);
+    Serial.println("HOLDING_CLENCH_WAITING..."); // Still holding, counting down
+  } else {
+    analogWrite(motorPin, 0);
+    Serial.println("MOTOR_OFF"); // Relaxed or reset
+  }
+ 
+  delay(30);
+}
+
